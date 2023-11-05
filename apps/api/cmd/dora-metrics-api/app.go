@@ -1,4 +1,4 @@
-package main
+package dora_metrics_api
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -6,17 +6,19 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
-	ConfigLoader "nutgaard/dora-metrics/config"
-	Utils "nutgaard/dora-metrics/utils"
+	"nutgaard/dora-metrics/internal/config"
+	"nutgaard/dora-metrics/internal/repositories"
+	"nutgaard/dora-metrics/internal/routers"
+	"nutgaard/dora-metrics/internal/utils"
 	"time"
 )
 
-func runApp(config *ConfigLoader.Config) {
+func RunApp(config *config.Config) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	log.Info().Msgf("Loaded config: %s", config)
 
-	deploymentRepository := CreateDeploymentRepository(config.DB)
+	deploymentRepository := repositories.CreateDeploymentRepository(config.DB)
 
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -26,11 +28,11 @@ func runApp(config *ConfigLoader.Config) {
 	router.Use(middleware.Timeout(60 * time.Second))
 
 	router.Get("/", func(writer http.ResponseWriter, request *http.Request) {
-		Utils.WriteText(writer, "Dora-metrics")
+		utils.WriteText(writer, "Dora-metrics")
 	})
-	router.Mount("/api/internal", statusRouter())
-	router.Mount("/api/deployment", deploymentRouter(deploymentRepository))
-	router.Mount("/api", jsonRouter())
+	router.Mount("/api/internal", routers.CreateStatusRouter())
+	router.Mount("/api/deployment", routers.CreateDeploymentRouter(deploymentRepository))
+	router.Mount("/api", routers.CreateJsonRouter())
 
 	http.ListenAndServe(":"+config.Port, router)
 }

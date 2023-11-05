@@ -1,4 +1,4 @@
-package main
+package routers
 
 import (
 	"encoding/xml"
@@ -13,7 +13,7 @@ type ExampleXml struct {
 	Two     string   `xml:"two,attr" json:"twotwo"`
 }
 
-func jsonRouter() http.Handler {
+func CreateJsonRouter() http.Handler {
 	render := renderPkg.New()
 	router := chi.NewRouter()
 

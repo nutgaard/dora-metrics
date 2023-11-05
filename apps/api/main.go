@@ -1,9 +1,10 @@
 package main
 
 import (
-	ConfigLoader "nutgaard/dora-metrics/config"
+	"nutgaard/dora-metrics/cmd/dora-metrics-api"
+	"nutgaard/dora-metrics/internal/config"
 )
 
 func main() {
-	runApp(ConfigLoader.ReadConfig())
+	dora_metrics_api.RunApp(config.ReadConfig())
 }
