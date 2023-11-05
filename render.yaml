@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: dora-metrics-frontend
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    healthCheckPath: /api/internal/isReady
+    dockerContext: ./apps/frontend
+    buildFilter:
+      paths:
+        - apps/frontend
+    envVars:
+      key: API_SECRET
+      fromService:
+        type: web
+        name: dora-metrics-api
+        envVarKey: API_SECRET
+
+  - type: web
+    name: dora-metrics-api
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    healthCheckPath: /api/internal/isReady
+    dockerContext: ./apps/api
+    buildFilter:
+      paths:
+        - apps/api
+    envVars:
+      - key: API_SECRET
+        generateValue: true
+      - key: DB_CONNECTION_URL
+        fromDatabase:
+          name: dora-metrics-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: dora-metrics-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: dora-metrics-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: dora-metrics-db
+          property: database
+
+databases:
+  - name: dora-metrics-db
+    databaseName: dora-metrics-db
+    user: dora-metrics
