@@ -1,0 +1,16 @@
+name: 'DORA-metrics-reporter'
+description: 'Report events in repo to dora-metrics'
+inputs:
+  api-key:  # id of input
+    description: 'API-key'
+    required: true
+
+outputs:
+  time: # id of output
+    description: 'The time we greeted you'
+
+runs:
+  using: 'node20'
+  main: 'action.js'
+  pre: 'pre.js'
+  post: 'post.js'
