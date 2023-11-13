@@ -1,0 +1,18 @@
+{
+  "name": "dora-metrics-reporter",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "bundle": "bun build --minify --outfile action.js --target node index.ts"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0"
+  }
+}
