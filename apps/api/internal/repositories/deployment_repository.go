@@ -3,12 +3,9 @@ package repositories
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
-	ConfigLoader "nutgaard/dora-metrics/internal/config"
 	"nutgaard/dora-metrics/internal/models"
 	"nutgaard/dora-metrics/internal/utils"
 	"time"
@@ -86,13 +83,7 @@ func (d *CreateDeploymentRequest) Validate() error {
 	return nil
 }
 
-func CreateDeploymentRepository(config ConfigLoader.PostgresqlConfig) *DeploymentRepository {
-	connectionUrl := fmt.Sprintf("postgresql://%s:%s@%s", config.Username, config.Password, config.Host)
-	pool, err := pgxpool.New(context.Background(), connectionUrl)
-	if err != nil {
-		log.Fatal().AnErr("error", err).Msg("Could not connect to db")
-	}
-
+func CreateDeploymentRepository(pool *pgxpool.Pool) *DeploymentRepository {
 	return &DeploymentRepository{pool}
 }
 

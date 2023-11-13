@@ -8,9 +8,7 @@ type Config struct {
 	DB   PostgresqlConfig
 }
 type PostgresqlConfig struct {
-	Host     string `env:"DB_HOST" envDefault:"localhost:8082/dora-metrics"`
-	Username string `env:"DB_USERNAME" envDefault:"username"`
-	Password string `env:"DB_PASSWORD" envDefault:"password"`
+	ConnectionUrl string `env:"DB_URL" envDefault:"postgres://username:password@localhost:8082/dora-metrics"`
 }
 
 func ReadConfig() *Config {
