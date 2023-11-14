@@ -6,15 +6,19 @@ import (
 )
 
 type Deployment struct {
-	Id            ksuid.KSUID
-	CreatedAt     time.Time
-	StartedAt     time.Time
-	FinishedAt    time.Time
+	Id         ksuid.KSUID
+	CreatedAt  time.Time
+	StartedAt  time.Time
+	FinishedAt time.Time
+
 	RepositoryUrl string
-	Application   string
 	Environment   string
-	Department    *string
-	Team          *string
-	Product       *string
-	Version       *string
+	Metadata      Metadata
+}
+
+type CreateDeployment struct {
+}
+
+func (d *CreateDeployment) Validate() error {
+	panic("implement me")
 }

@@ -1,8 +1,7 @@
 package repositories
 
 import (
-	"context"
-	"errors"
+	"encoding/json"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/segmentio/ksuid"
@@ -11,26 +10,24 @@ import (
 	"time"
 )
 
-type DeploymentRepository struct {
-	pool *pgxpool.Pool
-}
-
 type deployment struct {
 	Id            string
-	CreatedAt     time.Time `db:"created_at"`
-	StartedAt     time.Time `db:"started_at"`
-	FinishedAt    time.Time `db:"finished_at"`
-	RepositoryUrl string    `db:"repository_url"`
-	Application   string
+	CreatedAt     time.Time
+	StartedAt     time.Time
+	FinishedAt    time.Time
+	RepositoryUrl string
 	Environment   string
-	Department    *string
-	Team          *string
-	Product       *string
-	Version       *string
+	Metadata      string
 }
 
 func (d *deployment) dto() (*models.Deployment, error) {
 	id, err := ksuid.Parse(d.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata models.Metadata
+	err = json.Unmarshal([]byte(d.Metadata), &metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -41,64 +38,29 @@ func (d *deployment) dto() (*models.Deployment, error) {
 		StartedAt:     d.StartedAt,
 		FinishedAt:    d.FinishedAt,
 		RepositoryUrl: d.RepositoryUrl,
-		Application:   d.Application,
 		Environment:   d.Environment,
-		Department:    d.Department,
-		Team:          d.Team,
-		Product:       d.Product,
-		Version:       d.Version,
+		Metadata:      metadata,
 	}
 
 	return out, nil
 }
 
-type CreateDeploymentRequest struct {
-	StartedAt     time.Time
-	FinishedAt    time.Time
-	RepositoryUrl string
-	Application   string
-	Environment   string
-	Department    *string
-	Team          *string
-	Product       *string
-	Version       *string
+type DeploymentRepositoryCtx struct {
+	pool *pgxpool.Pool
 }
 
-func (d *CreateDeploymentRequest) Validate() error {
-	if d.StartedAt.IsZero() {
-		return errors.New(`'StartedAt' cannot be empty`)
-	}
-	if d.FinishedAt.IsZero() {
-		return errors.New(`'FinishedAt' cannot be empty`)
-	}
-	if len(d.RepositoryUrl) == 0 {
-		return errors.New(`'RepositoryUrl' cannot be empty`)
-	}
-	if len(d.Application) == 0 {
-		return errors.New(`'Application' cannot be empty`)
-	}
-	if len(d.Environment) == 0 {
-		return errors.New(`'Environment' cannot be empty`)
-	}
-	return nil
-}
-
-func CreateDeploymentRepository(pool *pgxpool.Pool) *DeploymentRepository {
-	return &DeploymentRepository{pool}
-}
-
-func (db DeploymentRepository) Ping() (int, error) {
-	ctx, cancel := defaultContext()
+func (db *DeploymentRepositoryCtx) Ping() error {
+	ctx, cancel := DefaultDbContext()
 	defer cancel()
 
 	var result int
-	err := pgxscan.Get(ctx, db.pool, &result, `SELECT 101`)
+	err := pgxscan.Get(ctx, db.pool, &result, `SELECT 1`)
 
-	return result, err
+	return err
 }
 
-func (db DeploymentRepository) GetAll() ([]*models.Deployment, error) {
-	ctx, cancel := defaultContext()
+func (db *DeploymentRepositoryCtx) GetAll() ([]*models.Deployment, error) {
+	ctx, cancel := DefaultDbContext()
 	defer cancel()
 
 	var result []*deployment
@@ -115,8 +77,8 @@ func (db DeploymentRepository) GetAll() ([]*models.Deployment, error) {
 	return out, err
 }
 
-func (db DeploymentRepository) GetById(id ksuid.KSUID) (*models.Deployment, error) {
-	ctx, cancel := defaultContext()
+func (db *DeploymentRepositoryCtx) GetById(id *ksuid.KSUID) (*models.Deployment, error) {
+	ctx, cancel := DefaultDbContext()
 	defer cancel()
 
 	var result deployment
@@ -125,28 +87,26 @@ func (db DeploymentRepository) GetById(id ksuid.KSUID) (*models.Deployment, erro
 		return nil, err
 	}
 
-	out, err := result.dto()
-	return out, err
+	return result.dto()
 }
 
-func (db DeploymentRepository) Create(d *CreateDeploymentRequest) (*models.Deployment, error) {
-	deployment := models.Deployment{
-		Id:            ksuid.New(),
-		CreatedAt:     time.Now(),
-		StartedAt:     d.StartedAt,
-		FinishedAt:    d.FinishedAt,
-		RepositoryUrl: d.RepositoryUrl,
-		Application:   d.Application,
-		Environment:   d.Environment,
-		Department:    d.Department,
-		Team:          d.Team,
-		Product:       d.Product,
-		Version:       d.Version,
-	}
-
-	return &deployment, nil
+func (db *DeploymentRepositoryCtx) Create(data *models.CreateDeployment) (*models.Deployment, error) {
+	panic("implement me")
 }
 
-func defaultContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 10*time.Second)
+func (db *DeploymentRepositoryCtx) Delete(id *ksuid.KSUID) error {
+	ctx, cancel := DefaultDbContext()
+	defer cancel()
+
+	_, err := db.pool.Exec(ctx, `DELETE FROM deployment where id = $1`, id.String())
+
+	return err
+}
+
+type DeploymentRepository interface {
+	Repository[models.Deployment, models.CreateDeployment]
+}
+
+func CreateDeploymentRepository(pool *pgxpool.Pool) DeploymentRepository {
+	return &DeploymentRepositoryCtx{pool}
 }

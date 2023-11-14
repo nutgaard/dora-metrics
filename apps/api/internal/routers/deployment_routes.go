@@ -6,19 +6,22 @@ import (
 	"github.com/segmentio/ksuid"
 	renderPkg "github.com/unrolled/render"
 	"net/http"
+	"nutgaard/dora-metrics/internal/models"
 	"nutgaard/dora-metrics/internal/repositories"
-	"strconv"
 )
 
 var render = renderPkg.New()
 
-func CreateDeploymentRouter(repository *repositories.DeploymentRepository) http.Handler {
+func CreateDeploymentRouter(repository repositories.DeploymentRepository) http.Handler {
 	router := chi.NewRouter()
 
 	router.Get("/ping", func(writer http.ResponseWriter, request *http.Request) {
-		result, err := repository.Ping()
-
-		respond(map[string]string{"alive": strconv.Itoa(result)}, err, writer)
+		err := repository.Ping()
+		if err != nil {
+			respond(map[string]string{"alive": "false", "error": err.Error()}, err, writer)
+		} else {
+			respond(map[string]string{"alive": "true"}, err, writer)
+		}
 	})
 
 	router.Get("/", func(writer http.ResponseWriter, request *http.Request) {
@@ -32,12 +35,12 @@ func CreateDeploymentRouter(repository *repositories.DeploymentRepository) http.
 			respondWithError(err, writer)
 			return
 		}
-		all, err := repository.GetById(id)
+		all, err := repository.GetById(&id)
 		respond(all, err, writer)
 	})
 
 	router.Post("/", func(writer http.ResponseWriter, request *http.Request) {
-		var d repositories.CreateDeploymentRequest
+		var d models.CreateDeployment
 		err := json.NewDecoder(request.Body).Decode(&d)
 		if err != nil {
 			respondWithError(err, writer)
